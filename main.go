@@ -4,8 +4,11 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
+	"log"
+	"net"
 	email "net/mail"
 	"os"
 	"strings"
@@ -310,10 +313,13 @@ type Channel interface {
 	Reply(code int, msg string)
 }
 
-type StdChannel struct{}
+type WriterChannel struct {
+	w io.Writer
+}
 
-func (c *StdChannel) Reply(code int, msg string) {
-	fmt.Printf("%d %s\n", code, msg)
+func (c *WriterChannel) Reply(code int, msg string) {
+	reply := fmt.Sprintf("%d %s\n", code, msg)
+	c.w.Write([]byte(reply))
 }
 
 func contains(a []string, s string) bool {
@@ -381,46 +387,53 @@ func isDomainName(s string) bool {
 	return ok
 }
 
-func run(r io.Reader, c Channel) {
+func run(ex *Exchange) {
 	next := []string{CommandHelo}
-	scanner := bufio.NewScanner(r)
-	mailer := &DebugMailer{}
-	exchange := NewExchange(mailer, r, c)
+	scanner := bufio.NewScanner(ex)
 
-	c.Reply(ReplyServiceReady, "Simple Mail Transfer Service Ready")
+	ex.Reply(ReplyServiceReady, "Simple Mail Transfer Service Ready")
 
 	for {
-		scanner.Scan() // TODO: error handling, eof etc
-		text := scanner.Text()
-		name := safeSubstring(text, 4)
+		got := scanner.Scan()
+		if !got {
+			err := scanner.Err()
+			if err != nil {
+				log.Println(err)
+			}
+
+			break
+		}
+
+		line := scanner.Text()
+		name := safeSubstring(line, 4)
 
 		if name == CommandQuit {
-			c.Reply(ReplyServiceClosing, "Service closing transmission channel")
+			ex.Reply(ReplyServiceClosing, "Service closing transmission channel")
 			break
 		}
 
 		if contains(unimplemented, name) {
-			c.Reply(ReplyNotImplemented, "not implemented")
+			ex.Reply(ReplyNotImplemented, "not implemented")
 			continue
 		}
 
 		cmd, ok := commands[name]
 		if !ok {
-			c.Reply(ReplyUnknown, "unrecognized command")
+			ex.Reply(ReplyUnknown, "unrecognized command")
 			continue
 		}
 
 		if cmd.Stateless {
-			cmd.Run(text, exchange)
+			cmd.Run(line, ex)
 			continue
 		}
 
 		if !contains(next, name) {
-			c.Reply(ReplyBadSequence, "bad command sequence")
+			ex.Reply(ReplyBadSequence, "bad command sequence")
 			continue
 		}
 
-		if cmd.Run(text, exchange) {
+		if cmd.Run(line, ex) {
 			next = cmd.Next
 		}
 	}
@@ -434,6 +447,41 @@ func safeSubstring(s string, n int) string {
 	}
 }
 
+func handleConn(conn net.Conn) {
+	mailer := &DebugMailer{}
+	channel := &WriterChannel{w: conn}
+	exchange := NewExchange(mailer, conn, channel)
+
+	run(exchange)
+}
+
+var smtpHostVar string
+var smtpPortVar int
+
 func main() {
-	run(os.Stdin, &StdChannel{})
+	flag.StringVar(&smtpHostVar, "smtp-host", "127.0.0.1",
+		"The host on which to run the SMTP server")
+	flag.IntVar(&smtpPortVar, "smtp-port", 8025,
+		"The port on which to run the SMTP server")
+
+	flag.Parse()
+	smtpAddr := fmt.Sprintf("%s:%d", smtpHostVar, smtpPortVar)
+
+	l, err := net.Listen("tcp", smtpAddr)
+	if err != nil {
+		panic(err)
+	}
+
+	log.Printf("SMTP server listening on %s\n", smtpAddr)
+
+	for {
+		// TODO: graceful shutdown with draining
+		conn, err := l.Accept()
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
+		go handleConn(conn)
+	}
 }
