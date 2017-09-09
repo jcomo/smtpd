@@ -8,15 +8,21 @@ import (
 )
 
 type Channel interface {
+	Hostname() string
 	Reply(code int, msg string)
 }
 
 type WriterChannel struct {
-	w io.Writer
+	w    io.Writer
+	host string
+}
+
+func (c *WriterChannel) Hostname() string {
+	return c.host
 }
 
 func (c *WriterChannel) Reply(code int, msg string) {
-	reply := fmt.Sprintf("%d %s\n", code, msg)
+	reply := fmt.Sprintf("%d %s\r\n", code, msg)
 	c.w.Write([]byte(reply))
 }
 
@@ -43,7 +49,7 @@ func NewExchange(m Mailer, r io.Reader, c Channel) *Exchange {
 }
 
 func (ex *Exchange) Domain(domain string) error {
-	if !isDomainName(domain) {
+	if !isDomainName(domain) && !isIp(domain) {
 		return errors.New("invalid domain")
 	}
 

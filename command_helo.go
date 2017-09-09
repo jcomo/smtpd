@@ -18,7 +18,7 @@ var helo Command = Command{
 			return false
 		}
 
-		ex.Reply(ReplyOK, "HELO "+domain)
+		ex.Reply(ReplyOK, "HELO "+ex.Hostname())
 		return true
 	},
 }

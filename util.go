@@ -4,17 +4,18 @@ import (
 	"strings"
 )
 
+func upper(s string) string {
+	return strings.ToUpper(s)
+}
+
 func getSuffix(s, prefix string) (string, bool) {
 	lenPre := len(prefix)
 	sub := safeSubstring(s, lenPre)
 
-	capS := strings.ToUpper(s)
-	capSub := strings.ToUpper(sub)
-
-	if !strings.HasPrefix(capS, capSub) {
-		return "", false
-	} else {
+	if strings.HasPrefix(upper(s), upper(sub)) {
 		return s[lenPre:], true
+	} else {
+		return "", false
 	}
 }
 

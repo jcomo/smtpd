@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
 )
 
 var smtpHostVar string
@@ -25,6 +26,11 @@ func main() {
 	}
 
 	log.Printf("SMTP server listening on %s\n", smtpAddr)
+	host, err := os.Hostname()
+	if err != nil {
+		log.Println("No hostname available. Using local address instead")
+		host = smtpAddr
+	}
 
 	for {
 		// TODO: graceful shutdown with draining
@@ -34,7 +40,6 @@ func main() {
 			return
 		}
 
-		log.Println("new connection from " + conn.RemoteAddr().String())
-		go handleConn(conn)
+		go handleConn(host, conn)
 	}
 }

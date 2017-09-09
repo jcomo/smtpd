@@ -7,13 +7,10 @@ import (
 	"strings"
 )
 
-func handleConn(conn net.Conn) {
+func handleConn(host string, conn net.Conn) {
 	mailer := &DebugMailer{}
-	channel := &WriterChannel{w: conn}
-	exchange := NewExchange(mailer, conn, channel)
-
-	handle(exchange)
-	log.Println("connection closed " + conn.RemoteAddr().String())
+	channel := &WriterChannel{w: conn, host: host}
+	handle(NewExchange(mailer, conn, channel))
 }
 
 func handle(ex *Exchange) {
@@ -34,7 +31,6 @@ func handle(ex *Exchange) {
 		}
 
 		line := scanner.Text()
-		log.Println(line)
 		name := strings.ToUpper(safeSubstring(line, 4))
 
 		if name == CommandQuit {

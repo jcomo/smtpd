@@ -1,5 +1,12 @@
 package main
 
+// IP addresses may be enclosed in brackets if the server chooses to identify
+// this way.
+func isIp(s string) bool {
+	l := len(s)
+	return l > 0 && s[0] == '[' && s[l-1] == ']'
+}
+
 // Lifted from the net pkg in the go std library. This function is private.
 // Instead of importing an entire DNS library for one function, we just
 // use it directly.
