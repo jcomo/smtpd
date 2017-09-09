@@ -2,8 +2,10 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
+	email "net/mail"
 	"os"
 	"strings"
 )
@@ -51,15 +53,12 @@ var helo Command = Command{
 		CommandMail,
 	},
 	Run: func(line string, ex *Exchange) bool {
-		scanner := wordScanner(line)
-		scanner.Scan()
-		got := scanner.Scan()
+		domain, got := getSuffix(line, "HELO ")
 		if !got {
 			ex.Reply(ReplySyntaxError, "Syntax: HELO <domain>")
 			return false
 		}
 
-		domain := scanner.Text()
 		ex.Domain(domain)
 		ex.Reply(ReplyOK, "HELO "+domain)
 		return true
@@ -79,7 +78,14 @@ var mail Command = Command{
 			return false
 		}
 
-		ex.From(address)
+		ex.Reset()
+		err := ex.From(address)
+		if err != nil {
+			ex.Reply(ReplyInvalidMailboxSyntax, err.Error())
+			return false
+		}
+
+		ex.Reply(ReplyOK, "OK")
 		return true
 	},
 }
@@ -98,7 +104,13 @@ var rcpt Command = Command{
 			return false
 		}
 
-		ex.To(address)
+		err := ex.To(address)
+		if err != nil {
+			ex.Reply(ReplyInvalidMailboxSyntax, err.Error())
+			return false
+		}
+
+		ex.Reply(ReplyOK, "OK")
 		return true
 	},
 }
@@ -124,18 +136,48 @@ var noop Command = Command{
 	},
 }
 
+const (
+	EOD     = 0x2e // '.'
+	NEWLINE = 0xa  // \n
+)
+
+var data Command = Command{
+	Name: CommandData,
+	Next: []string{
+		CommandMail,
+	},
+	Run: func(line string, ex *Exchange) bool {
+		ex.Reply(ReplyDataStart, "start mail input; end with <CRLF>.<CRLF>")
+
+		var buf bytes.Buffer
+		scanner := bufio.NewScanner(ex)
+
+		for {
+			scanner.Scan()
+			bs := scanner.Bytes()
+			if len(bs) > 0 && bs[0] == EOD {
+				break
+			}
+
+			// TODO: error handling / checking
+			buf.Write(bs)
+			buf.WriteByte(NEWLINE)
+		}
+
+		ex.Body(bytes.NewReader(buf.Bytes()))
+		ex.Done()
+
+		ex.Reply(ReplyOK, "OK")
+		return true
+	},
+}
+
 func getSuffix(s, prefix string) (string, bool) {
 	if !strings.HasPrefix(s, prefix) {
 		return "", false
 	} else {
 		return s[len(prefix):], true
 	}
-}
-
-func wordScanner(s string) *bufio.Scanner {
-	scanner := bufio.NewScanner(strings.NewReader(s))
-	scanner.Split(bufio.ScanWords)
-	return scanner
 }
 
 var commands map[string]Command
@@ -148,6 +190,7 @@ func init() {
 	commands[rcpt.Name] = rcpt
 	commands[rset.Name] = rset
 	commands[noop.Name] = noop
+	commands[data.Name] = data
 
 	unimplemented = []string{
 		CommandHelp,
@@ -160,14 +203,25 @@ func init() {
 }
 
 type Exchange struct {
+	io.Reader
 	Channel
+
 	domain string
-	from   string
-	to     []string
+	from   *email.Address
+	to     []*email.Address
+	body   io.Reader
+
+	mailer Mailer
+	parser *email.AddressParser
 }
 
-func NewExchange(c Channel) *Exchange {
-	return &Exchange{Channel: c}
+func NewExchange(m Mailer, r io.Reader, c Channel) *Exchange {
+	return &Exchange{
+		Channel: c,
+		Reader:  r,
+		mailer:  m,
+		parser:  &email.AddressParser{},
+	}
 }
 
 func (ex *Exchange) Domain(domain string) error {
@@ -177,25 +231,71 @@ func (ex *Exchange) Domain(domain string) error {
 }
 
 func (ex *Exchange) From(from string) error {
-	// TODO: check form
-	ex.from = from
+	addr, err := ex.parser.Parse(from)
+	if err != nil {
+		return err
+	}
+
+	ex.from = addr
 	return nil
 }
 
 func (ex *Exchange) To(to string) error {
-	// TODO: check form
+	addr, err := ex.parser.Parse(to)
+	if err != nil {
+		return err
+	}
+
 	if ex.to == nil {
-		ex.to = []string{to}
+		ex.to = []*email.Address{addr}
 	} else {
-		ex.to = append(ex.to, to)
+		ex.to = append(ex.to, addr)
 	}
 
 	return nil
 }
 
+func (ex *Exchange) Body(r io.Reader) {
+	ex.body = r
+}
+
+func (ex *Exchange) Done() {
+	ex.mailer.Send(Mail{
+		From: ex.from,
+		To:   ex.to,
+		Body: ex.body,
+	})
+
+	ex.Reset()
+}
+
 func (ex *Exchange) Reset() {
-	ex.from = ""
+	ex.from = nil
 	ex.to = nil
+}
+
+type Mail struct {
+	From *email.Address
+	To   []*email.Address
+	Body io.Reader
+}
+
+type Mailer interface {
+	Send(mail Mail) error
+}
+
+type DebugMailer struct {
+}
+
+func (m *DebugMailer) Send(mail Mail) error {
+	fmt.Println("From: " + mail.From.String())
+	for _, addr := range mail.To {
+		fmt.Println("To: " + addr.String())
+	}
+
+	fmt.Println()
+	io.Copy(os.Stdout, mail.Body)
+	return nil
 }
 
 type Channel interface {
@@ -221,20 +321,16 @@ func contains(a []string, s string) bool {
 func run(r io.Reader, c Channel) {
 	next := []string{CommandHelo}
 	scanner := bufio.NewScanner(r)
-	exchange := NewExchange(c)
+	mailer := &DebugMailer{}
+	exchange := NewExchange(mailer, r, c)
 
 	c.Reply(ReplyServiceReady, "Simple Mail Transfer Service Ready")
 
 	for {
-		fmt.Println(exchange)
 		scanner.Scan() // TODO: error handling, eof etc
 		text := scanner.Text()
-		if len(text) < 4 {
-			c.Reply(ReplyUnknown, "no command")
-			continue
-		}
+		name := safeSubstring(text, 4)
 
-		name := strings.ToUpper(text[:4])
 		if name == CommandQuit {
 			c.Reply(ReplyServiceClosing, "Service closing transmission channel")
 			break
@@ -264,6 +360,14 @@ func run(r io.Reader, c Channel) {
 		if cmd.Run(text, exchange) {
 			next = cmd.Next
 		}
+	}
+}
+
+func safeSubstring(s string, n int) string {
+	if len(s) < n {
+		return s
+	} else {
+		return s[:n]
 	}
 }
 
