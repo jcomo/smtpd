@@ -1,13 +1,13 @@
 package main
 
-var rset Command = Command{
-	Name: CommandRset,
-	Next: []string{
-		CommandMail,
-	},
-	Run: func(line string, ex *Exchange) bool {
-		ex.Reset()
-		ex.Reply(ReplyOK, "reset")
-		return true
-	},
+type rsetCommand struct{}
+
+func (c *rsetCommand) Next() []string {
+	return []string{CommandMail}
+}
+
+func (c *rsetCommand) Process(line string, ex *Exchange) (bool, error) {
+	ex.Reset()
+	ex.Reply(ReplyOK, "reset")
+	return true, nil
 }

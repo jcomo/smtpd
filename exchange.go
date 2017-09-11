@@ -27,7 +27,7 @@ func (c *WriterChannel) Reply(code int, msg string) {
 }
 
 type Exchange struct {
-	io.Reader
+	io.ReadCloser
 	Channel
 
 	domain string
@@ -39,12 +39,12 @@ type Exchange struct {
 	parser *email.AddressParser
 }
 
-func NewExchange(m Mailer, r io.Reader, c Channel) *Exchange {
+func NewExchange(m Mailer, r io.ReadCloser, c Channel) *Exchange {
 	return &Exchange{
-		Channel: c,
-		Reader:  r,
-		mailer:  m,
-		parser:  &email.AddressParser{},
+		Channel:    c,
+		ReadCloser: r,
+		mailer:     m,
+		parser:     &email.AddressParser{},
 	}
 }
 

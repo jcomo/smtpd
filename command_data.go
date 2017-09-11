@@ -1,36 +1,41 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 )
 
-var data Command = Command{
-	Name: CommandData,
-	Next: []string{
-		CommandMail,
-	},
-	Run: func(line string, ex *Exchange) bool {
+func newDataCommand() command {
+	return &dataCommand{
+		started: false,
+	}
+}
+
+type dataCommand struct {
+	started bool
+	buf     bytes.Buffer
+}
+
+func (c *dataCommand) Next() []string {
+	return []string{CommandMail}
+}
+
+func (c *dataCommand) Process(line string, ex *Exchange) (bool, error) {
+	if !c.started {
 		ex.Reply(ReplyDataStart, "start mail input; end with <CRLF>.<CRLF>")
+		c.started = true
+		return false, nil
+	}
 
-		var buf bytes.Buffer
-		scanner := bufio.NewScanner(ex)
-
-		for {
-			scanner.Scan()
-			bs := scanner.Bytes()
-			if len(bs) > 0 && bs[0] == EOD {
-				break
-			}
-
-			buf.Write(bs)
-			buf.WriteByte(NEWLINE)
-		}
-
-		ex.Body(bytes.NewReader(buf.Bytes()))
+	if line == "." {
+		stream := c.buf.Bytes()
+		ex.Body(bytes.NewReader(stream))
 		ex.Done()
 
 		ex.Reply(ReplyOK, "OK")
-		return true
-	},
+		return true, nil
+	}
+
+	c.buf.WriteString(line)
+	c.buf.WriteRune('\n')
+	return false, nil
 }

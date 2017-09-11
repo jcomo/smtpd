@@ -1,10 +1,12 @@
 package main
 
-var noop Command = Command{
-	Name:      CommandNoop,
-	Stateless: true,
-	Run: func(line string, ex *Exchange) bool {
-		ex.Reply(ReplyOK, "noop")
-		return true
-	},
+type noopCommand struct{}
+
+func (c *noopCommand) Next() []string {
+	return nil
+}
+
+func (c *noopCommand) Process(line string, ex *Exchange) (bool, error) {
+	ex.Reply(ReplyOK, "noop")
+	return true, nil
 }

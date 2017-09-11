@@ -40,6 +40,6 @@ func main() {
 			return
 		}
 
-		go handleConn(host, conn)
+		go runLoop(host, conn)
 	}
 }

@@ -28,38 +28,19 @@ const (
 	CommandVrfy = "VRFY"
 )
 
-const (
-	EOD     = 0x2e // '.'
-	NEWLINE = 0xa  // \n
-)
-
-var commands map[string]Command
-var unimplemented []string
-
-type RunFunc func(string, *Exchange) bool
-
-type Command struct {
-	Name      string
-	Next      []string
-	Stateless bool
-	Run       RunFunc
-}
-
-func init() {
-	commands = make(map[string]Command)
-	commands[helo.Name] = helo
-	commands[mail.Name] = mail
-	commands[rcpt.Name] = rcpt
-	commands[rset.Name] = rset
-	commands[noop.Name] = noop
-	commands[data.Name] = data
-
-	unimplemented = []string{
-		CommandHelp,
-		CommandEhlo,
-		CommandExpn,
-		CommandVrfy,
-		CommandSoml,
-		CommandSaml,
+func defaultCommands() map[string]commandFactory {
+	return map[string]commandFactory{
+		CommandData: factory(newDataCommand),
+		CommandEhlo: nil,
+		CommandExpn: nil,
+		CommandHelo: instanceFactory(&heloCommand{}),
+		CommandHelp: nil,
+		CommandMail: instanceFactory(&mailCommand{}),
+		CommandNoop: instanceFactory(&noopCommand{}),
+		CommandRcpt: instanceFactory(&rcptCommand{}),
+		CommandRset: instanceFactory(&rsetCommand{}),
+		CommandSaml: nil,
+		CommandSoml: nil,
+		CommandVrfy: nil,
 	}
 }
