@@ -3,26 +3,8 @@ package main
 import (
 	"bufio"
 	"log"
-	"net"
 	"strings"
 )
-
-func runLoop(host string, conn net.Conn) {
-	mailer := &DebugMailer{}
-	channel := &WriterChannel{w: conn, host: host}
-
-	commands := defaultCommands()
-	exchange := NewExchange(mailer, conn, channel)
-
-	loop := &protocolLoop{
-		ex:       exchange,
-		commands: commands,
-		next:     []string{CommandHelo},
-		waiting:  true,
-	}
-
-	loop.Run()
-}
 
 type protocolLoop struct {
 	ex       *Exchange
