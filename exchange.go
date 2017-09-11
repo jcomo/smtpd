@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	email "net/mail"
+	mail "net/mail"
 )
 
 type Channel interface {
@@ -31,12 +31,12 @@ type Exchange struct {
 	Channel
 
 	domain string
-	from   *email.Address
-	to     []*email.Address
+	from   *mail.Address
+	to     []*mail.Address
 	body   io.Reader
 
 	mailer Mailer
-	parser *email.AddressParser
+	parser *mail.AddressParser
 }
 
 func NewExchange(m Mailer, r io.ReadCloser, c Channel) *Exchange {
@@ -44,7 +44,7 @@ func NewExchange(m Mailer, r io.ReadCloser, c Channel) *Exchange {
 		Channel:    c,
 		ReadCloser: r,
 		mailer:     m,
-		parser:     &email.AddressParser{},
+		parser:     &mail.AddressParser{},
 	}
 }
 
@@ -74,7 +74,7 @@ func (ex *Exchange) To(to string) error {
 	}
 
 	if ex.to == nil {
-		ex.to = []*email.Address{addr}
+		ex.to = []*mail.Address{addr}
 	} else {
 		ex.to = append(ex.to, addr)
 	}

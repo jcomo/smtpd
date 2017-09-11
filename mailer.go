@@ -3,13 +3,13 @@ package main
 import (
 	"fmt"
 	"io"
-	email "net/mail"
+	mail "net/mail"
 	"os"
 )
 
 type Mail struct {
-	From *email.Address
-	To   []*email.Address
+	From *mail.Address
+	To   []*mail.Address
 	Body io.Reader
 }
 
