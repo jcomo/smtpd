@@ -24,9 +24,17 @@ const (
 	CommandRcpt = "RCPT"
 	CommandRset = "RSET"
 	CommandSaml = "SAML"
+	CommandSend = "SEND"
 	CommandSoml = "SOML"
 	CommandVrfy = "VRFY"
 )
+
+var CommandsMail = []string{
+	CommandMail,
+	CommandSaml,
+	CommandSend,
+	CommandSoml,
+}
 
 func defaultCommands() map[string]commandFactory {
 	return map[string]commandFactory{
@@ -35,12 +43,13 @@ func defaultCommands() map[string]commandFactory {
 		CommandExpn: nil,
 		CommandHelo: instanceFactory(&heloCommand{}),
 		CommandHelp: nil,
-		CommandMail: instanceFactory(&mailCommand{}),
+		CommandMail: instanceFactory(newMailCommand(CommandMail)),
 		CommandNoop: instanceFactory(&noopCommand{}),
 		CommandRcpt: instanceFactory(&rcptCommand{}),
 		CommandRset: instanceFactory(&rsetCommand{}),
-		CommandSaml: nil,
-		CommandSoml: nil,
+		CommandSend: instanceFactory(newMailCommand(CommandSend)),
+		CommandSaml: instanceFactory(newMailCommand(CommandSaml)),
+		CommandSoml: instanceFactory(newMailCommand(CommandSoml)),
 		CommandVrfy: nil,
 	}
 }

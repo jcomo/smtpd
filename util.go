@@ -12,7 +12,7 @@ func getSuffix(s, prefix string) (string, bool) {
 	lenPre := len(prefix)
 	sub := safeSubstring(s, lenPre)
 
-	if strings.HasPrefix(upper(s), upper(sub)) {
+	if upper(sub) == upper(prefix) {
 		return s[lenPre:], true
 	} else {
 		return "", false

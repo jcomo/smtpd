@@ -3,7 +3,7 @@ package main
 type rsetCommand struct{}
 
 func (c *rsetCommand) Next() []string {
-	return []string{CommandMail}
+	return CommandsMail
 }
 
 func (c *rsetCommand) Process(line string, ex *Exchange) (*reply, bool) {

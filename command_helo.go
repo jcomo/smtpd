@@ -3,7 +3,7 @@ package main
 type heloCommand struct{}
 
 func (c *heloCommand) Next() []string {
-	return []string{CommandMail}
+	return CommandsMail
 }
 
 func (c *heloCommand) Process(line string, ex *Exchange) (*reply, bool) {

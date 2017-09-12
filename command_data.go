@@ -17,7 +17,7 @@ type dataCommand struct {
 }
 
 func (c *dataCommand) Next() []string {
-	return []string{CommandMail}
+	return CommandsMail
 }
 
 func (c *dataCommand) Process(line string, ex *Exchange) (*reply, bool) {
