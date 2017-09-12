@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"strings"
 )
 
 func newDataCommand() command {
@@ -27,12 +28,18 @@ func (c *dataCommand) Process(line string, ex *Exchange) (*reply, bool) {
 		return r, false
 	}
 
-	if line == "." {
-		stream := c.buf.Bytes()
-		ex.Body(bytes.NewReader(stream))
-		ex.Done()
+	if strings.HasPrefix(line, ".") {
+		// We remove the first dot since clients will send a preceding
+		// dot to avoid the EOM sequence
+		line = line[1:]
 
-		return ok(), true
+		if len(line) == 0 {
+			stream := c.buf.Bytes()
+			ex.Body(bytes.NewReader(stream))
+			ex.Done()
+
+			return ok(), true
+		}
 	}
 
 	c.buf.WriteString(line)
