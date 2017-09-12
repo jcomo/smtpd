@@ -14,7 +14,7 @@ type Server struct {
 	commands map[string]commandFactory
 }
 
-func NewServer(loop IOLoop) *Server {
+func NewServer() *Server {
 	host, err := os.Hostname()
 	if err != nil {
 		log.Println("No hostname available. Using 'local'")
@@ -23,8 +23,6 @@ func NewServer(loop IOLoop) *Server {
 
 	return &Server{
 		Hostname: host,
-		Mailer:   &DebugMailer{},
-		IOLoop:   loop,
 		commands: defaultCommands(),
 	}
 }

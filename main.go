@@ -6,6 +6,7 @@ import (
 )
 
 var debugVar bool
+var hookUrlVar string
 var smtpHostVar string
 var smtpPortVar int
 
@@ -22,6 +23,8 @@ func usage() {
 func main() {
 	flag.BoolVar(&debugVar, "debug", false,
 		"Run in debug mode (do NOT use in production)")
+	flag.StringVar(&hookUrlVar, "hook-url", "",
+		"If specified, sent mail will be delivered here via HTTP POST")
 	flag.StringVar(&smtpHostVar, "smtp-host", "localhost",
 		"The network interface to bind to")
 	flag.IntVar(&smtpPortVar, "smtp-port", 8025,
@@ -31,12 +34,20 @@ func main() {
 	flag.Parse()
 
 	var loop IOLoop
-	if debugVar {
-		loop = &ConsoleIO{}
-	} else {
+	var mailer Mailer
+
+	loop = &ConsoleIO{}
+	if !debugVar {
 		loop = NewSocketIO(smtpHostVar, smtpPortVar)
 	}
 
-	srv := NewServer(loop)
+	mailer = &DebugMailer{}
+	if hookUrlVar != "" {
+		mailer = NewHTTPMailer(hookUrlVar)
+	}
+
+	srv := NewServer()
+	srv.IOLoop = loop
+	srv.Mailer = mailer
 	srv.Run()
 }
