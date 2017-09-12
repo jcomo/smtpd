@@ -6,20 +6,19 @@ func (c *mailCommand) Next() []string {
 	return []string{CommandRcpt, CommandRset}
 }
 
-func (c *mailCommand) Process(line string, ex *Exchange) (bool, error) {
+func (c *mailCommand) Process(line string, ex *Exchange) (*reply, bool) {
 	address, got := getSuffix(line, "MAIL FROM:")
 	if !got {
-		ex.Reply(ReplySyntaxError, "Syntax: MAIL FROM: <address>")
-		return false, nil
+		r := newReply(ReplySyntaxError, "Syntax: MAIL FROM: <address>")
+		return r, false
 	}
 
 	ex.Reset()
 	err := ex.From(address)
 	if err != nil {
-		ex.Reply(ReplyInvalidMailboxSyntax, err.Error())
-		return false, nil
+		r := newReply(ReplyInvalidMailboxSyntax, err.Error())
+		return r, false
 	}
 
-	ex.Reply(ReplyOK, "OK")
-	return true, nil
+	return ok(), true
 }

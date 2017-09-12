@@ -67,14 +67,10 @@ func (l *protocolLoop) Run() {
 }
 
 func (l *protocolLoop) processCommand(line string) {
-	done, err := l.command.Process(line, l.ex)
-	if err != nil {
-		log.Println(err)
-		l.waiting = true
-		return
-	}
-
+	r, done := l.command.Process(line, l.ex)
+	l.ex.Reply(r.Code, r.Message)
 	l.waiting = done
+
 	if done {
 		next := l.command.Next()
 		if next != nil {

@@ -6,8 +6,7 @@ func (c *rsetCommand) Next() []string {
 	return []string{CommandMail}
 }
 
-func (c *rsetCommand) Process(line string, ex *Exchange) (bool, error) {
+func (c *rsetCommand) Process(line string, ex *Exchange) (*reply, bool) {
 	ex.Reset()
-	ex.Reply(ReplyOK, "reset")
-	return true, nil
+	return ok(), true
 }

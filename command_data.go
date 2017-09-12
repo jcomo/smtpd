@@ -19,11 +19,12 @@ func (c *dataCommand) Next() []string {
 	return []string{CommandMail}
 }
 
-func (c *dataCommand) Process(line string, ex *Exchange) (bool, error) {
+func (c *dataCommand) Process(line string, ex *Exchange) (*reply, bool) {
 	if !c.started {
-		ex.Reply(ReplyDataStart, "start mail input; end with <CRLF>.<CRLF>")
 		c.started = true
-		return false, nil
+		r := newReply(ReplyDataStart,
+			"start mail input; end with <CRLF>.<CRLF>")
+		return r, false
 	}
 
 	if line == "." {
@@ -31,11 +32,10 @@ func (c *dataCommand) Process(line string, ex *Exchange) (bool, error) {
 		ex.Body(bytes.NewReader(stream))
 		ex.Done()
 
-		ex.Reply(ReplyOK, "OK")
-		return true, nil
+		return ok(), true
 	}
 
 	c.buf.WriteString(line)
 	c.buf.WriteRune('\n')
-	return false, nil
+	return nil, false
 }

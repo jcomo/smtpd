@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
-	mail "net/mail"
+	"net/mail"
 	"os"
 )
 

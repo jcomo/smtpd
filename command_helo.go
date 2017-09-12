@@ -6,19 +6,19 @@ func (c *heloCommand) Next() []string {
 	return []string{CommandMail}
 }
 
-func (c *heloCommand) Process(line string, ex *Exchange) (bool, error) {
+func (c *heloCommand) Process(line string, ex *Exchange) (*reply, bool) {
 	domain, got := getSuffix(line, "HELO ")
 	if !got {
-		ex.Reply(ReplySyntaxError, "Syntax: HELO <domain>")
-		return false, nil
+		r := newReply(ReplySyntaxError, "Syntax: HELO <domain>")
+		return r, false
 	}
 
 	err := ex.Domain(domain)
 	if err != nil {
-		ex.Reply(ReplySyntaxError, err.Error())
-		return false, nil
+		r := newReply(ReplySyntaxError, err.Error())
+		return r, false
 	}
 
-	ex.Reply(ReplyOK, "HELO "+ex.Hostname())
-	return true, nil
+	r := newReply(ReplyOK, "HELO "+ex.Hostname())
+	return r, true
 }

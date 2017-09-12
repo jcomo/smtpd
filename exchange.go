@@ -4,7 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	mail "net/mail"
+	"net/mail"
+	"strings"
 )
 
 type Channel interface {
@@ -22,8 +23,19 @@ func (c *WriterChannel) Hostname() string {
 }
 
 func (c *WriterChannel) Reply(code int, msg string) {
-	reply := fmt.Sprintf("%d %s\r\n", code, msg)
-	c.w.Write([]byte(reply))
+	lines := strings.Split(msg, "\n")
+
+	for i, line := range lines {
+		last := i == len(lines)-1
+
+		space := " "
+		if !last {
+			space = "-"
+		}
+
+		out := fmt.Sprintf("%d%s%s\r\n", code, space, line)
+		c.w.Write([]byte(out))
+	}
 }
 
 type Exchange struct {
