@@ -2,6 +2,8 @@ package main
 
 import (
 	"io"
+	"log"
+	"os"
 )
 
 type Server struct {
@@ -12,7 +14,13 @@ type Server struct {
 	commands map[string]commandFactory
 }
 
-func NewServer(host string, loop IOLoop) *Server {
+func NewServer(loop IOLoop) *Server {
+	host, err := os.Hostname()
+	if err != nil {
+		log.Println("No hostname available. Using 'local'")
+		host = "local"
+	}
+
 	return &Server{
 		Hostname: host,
 		Mailer:   &DebugMailer{},

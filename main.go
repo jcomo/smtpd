@@ -3,8 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
-	"os"
 )
 
 var debugVar bool
@@ -32,12 +30,6 @@ func main() {
 	flag.Usage = usage
 	flag.Parse()
 
-	host, err := os.Hostname()
-	if err != nil {
-		log.Println("No hostname available. Using defined host instead")
-		host = smtpHostVar
-	}
-
 	var loop IOLoop
 	if debugVar {
 		loop = &ConsoleIO{}
@@ -45,6 +37,6 @@ func main() {
 		loop = NewSocketIO(smtpHostVar, smtpPortVar)
 	}
 
-	srv := NewServer(host, loop)
+	srv := NewServer(loop)
 	srv.Run()
 }
