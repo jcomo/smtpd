@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
+
+	"github.com/jcomo/smtpd"
 )
 
 var debugVar bool
@@ -33,20 +35,20 @@ func main() {
 	flag.Usage = usage
 	flag.Parse()
 
-	var loop IOLoop
-	var mailer Mailer
+	var loop smtpd.IOLoop
+	var mailer smtpd.Mailer
 
-	loop = &ConsoleIO{}
+	loop = &smtpd.ConsoleIO{}
 	if !debugVar {
-		loop = NewSocketIO(smtpHostVar, smtpPortVar)
+		loop = smtpd.NewSocketIO(smtpHostVar, smtpPortVar)
 	}
 
-	mailer = &DebugMailer{}
+	mailer = &smtpd.DebugMailer{}
 	if hookUrlVar != "" {
-		mailer = NewHTTPMailer(hookUrlVar)
+		mailer = smtpd.NewHTTPMailer(hookUrlVar)
 	}
 
-	srv := NewServer()
+	srv := smtpd.NewServer()
 	srv.IOLoop = loop
 	srv.Mailer = mailer
 	srv.Run()

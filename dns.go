@@ -1,4 +1,4 @@
-package main
+package smtpd
 
 // IP addresses may be enclosed in brackets if the server chooses to identify
 // this way.

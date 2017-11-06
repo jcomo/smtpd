@@ -1,4 +1,4 @@
-package main
+package smtpd
 
 type heloCommand struct{}
 
