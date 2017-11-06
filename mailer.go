@@ -8,16 +8,16 @@ import (
 )
 
 type Mailer interface {
-	Send(mail *mail.Message) error
+	Send(msg *mail.Message) error
 }
 
 type DebugMailer struct{}
 
-func (m *DebugMailer) Send(mail *mail.Message) error {
-	fmt.Println("From: " + mail.Header.Get("From"))
-	fmt.Println("To: " + mail.Header.Get("To"))
+func (m *DebugMailer) Send(msg *mail.Message) error {
+	fmt.Println("From: " + msg.Header.Get("From"))
+	fmt.Println("To: " + msg.Header.Get("To"))
 	fmt.Println()
 
-	io.Copy(os.Stdout, mail.Body)
+	io.Copy(os.Stdout, msg.Body)
 	return nil
 }
