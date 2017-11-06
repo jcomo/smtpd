@@ -25,8 +25,6 @@ func usage() {
 func main() {
 	flag.BoolVar(&debugVar, "debug", false,
 		"Run in debug mode (do NOT use in production)")
-	flag.StringVar(&hookUrlVar, "hook-url", "",
-		"If specified, sent mail will be delivered here via HTTP POST")
 	flag.StringVar(&smtpHostVar, "smtp-host", "localhost",
 		"The network interface to bind to")
 	flag.IntVar(&smtpPortVar, "smtp-port", 8025,
@@ -36,20 +34,13 @@ func main() {
 	flag.Parse()
 
 	var loop smtpd.IOLoop
-	var mailer smtpd.Mailer
-
 	loop = &smtpd.ConsoleIO{}
 	if !debugVar {
 		loop = smtpd.NewSocketIO(smtpHostVar, smtpPortVar)
 	}
 
-	mailer = &smtpd.DebugMailer{}
-	if hookUrlVar != "" {
-		mailer = smtpd.NewHTTPMailer(hookUrlVar)
-	}
-
 	srv := smtpd.NewServer()
+	srv.Mailer = &smtpd.DebugMailer{}
 	srv.IOLoop = loop
-	srv.Mailer = mailer
 	srv.Run()
 }

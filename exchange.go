@@ -98,14 +98,15 @@ func (ex *Exchange) Body(r io.Reader) {
 	ex.body = r
 }
 
-func (ex *Exchange) Done() {
-	ex.mailer.Send(Mail{
-		From: ex.from,
-		To:   ex.to,
-		Body: ex.body,
-	})
+func (ex *Exchange) Done() error {
+	msg, err := mail.ReadMessage(ex.body)
+	if err != nil {
+		return err
+	}
 
+	ex.mailer.Send(msg)
 	ex.Reset()
+	return nil
 }
 
 func (ex *Exchange) Reset() {

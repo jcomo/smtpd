@@ -36,7 +36,13 @@ func (c *dataCommand) Process(line string, ex *Exchange) (*reply, bool) {
 		if len(line) == 0 {
 			stream := c.buf.Bytes()
 			ex.Body(bytes.NewReader(stream))
-			ex.Done()
+			err := ex.Done()
+
+			if err != nil {
+				c.buf.Reset()
+				r := newReply(ReplySyntaxError, err.Error())
+				return r, false
+			}
 
 			return ok(), true
 		}
