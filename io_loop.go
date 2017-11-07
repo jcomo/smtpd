@@ -17,9 +17,6 @@ type IOLoop interface {
 type ConsoleIO struct{}
 
 func (cio *ConsoleIO) Run(accept AcceptFunc) error {
-	log.Println("!!! smtpd is running in debug mode. " +
-		"This should NEVER be enabled in production")
-
 	accept(os.Stdin, os.Stdout)
 	return nil
 }
@@ -38,8 +35,6 @@ func (sio *SocketIO) Run(accept AcceptFunc) error {
 	if err != nil {
 		return err
 	}
-
-	log.Printf("SMTP server listening on %s\n", sio.addr)
 
 	for {
 		// TODO: graceful shutdown with draining

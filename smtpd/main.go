@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 
 	"github.com/jcomo/smtpd"
 )
@@ -36,6 +37,7 @@ func main() {
 	var loop smtpd.IOLoop
 	loop = &smtpd.ConsoleIO{}
 	if !debugVar {
+		log.Printf("SMTP server listening on %s:%d\n", smtpHostVar, smtpPortVar)
 		loop = smtpd.NewSocketIO(smtpHostVar, smtpPortVar)
 	}
 
