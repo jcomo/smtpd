@@ -2,6 +2,7 @@ package smtpd
 
 import (
 	"bytes"
+	"io"
 	"strings"
 )
 
@@ -34,8 +35,7 @@ func (c *dataCommand) Process(line string, ex *Exchange) (*reply, bool) {
 		line = line[1:]
 
 		if len(line) == 0 {
-			stream := c.buf.Bytes()
-			ex.Body(bytes.NewReader(stream))
+			ex.Body(c.reader())
 			err := ex.Done()
 
 			if err != nil {
@@ -51,4 +51,11 @@ func (c *dataCommand) Process(line string, ex *Exchange) (*reply, bool) {
 	c.buf.WriteString(line)
 	c.buf.WriteRune('\n')
 	return nil, false
+}
+
+func (c *dataCommand) reader() io.Reader {
+	// Transparently remove the last byte since it is an extraneous newline
+	stream := c.buf.Bytes()
+	stream = stream[:len(stream)-1]
+	return bytes.NewReader(stream)
 }
